@@ -11,8 +11,10 @@ contract BundleToken is ERC23StandardToken {
     uint256 public constant decimals = 18;
     uint256 public constant tokenRate = 5000;
 
-    address public multisig; //multisig wallet, to which all contributions will be sent
+    address public multisig;
     address public foundation; //owner address
+    address public bountyAddress;
+    address public airdropAddress;
 
     uint256 public cap;
     uint256 public softCap;
@@ -42,8 +44,9 @@ contract BundleToken is ERC23StandardToken {
     uint256 public constant TOKEN_SALE = 255 * MILLION * BUNDLE_UNIT;
     uint256 public constant TOKEN_TEAM = 100 * MILLION * BUNDLE_UNIT;
     uint256 public constant TOKEN_OPERATIONAL_EXPENCES = 85 * MILLION * BUNDLE_UNIT;
-    uint256 public constant TOKEN_MARKETING = 58 * MILLION * BUNDLE_UNIT;
-    uint256 public constant TOKEN_BOUNTY = 2 * MILLION * BUNDLE_UNIT;
+    uint256 public constant TOKEN_MARKETING = 50 * MILLION * BUNDLE_UNIT;
+    uint256 public constant TOKEN_BOUNTY = 8 * MILLION * BUNDLE_UNIT;
+    uint256 public constant TOKEN_AIRDROP = 2 * MILLION * BUNDLE_UNIT;
 
     uint256 public crowdsaleTokenSold = 0; //Keeps track of the amount of tokens sold during the crowdsale
     uint256 public etherRaised = 0; //Keeps track of the Ether raised during the crowdsale
@@ -59,6 +62,8 @@ contract BundleToken is ERC23StandardToken {
     //Initialize total supply and allocate ecosystem & foundation tokens
   	function BundleToken(
         address _multisig,
+        address _bountyAddress,
+        address _airdropAddress,
         uint256 _softCap,
         uint256 _cap,
         uint256 _preSaleStartTime,
@@ -67,6 +72,8 @@ contract BundleToken is ERC23StandardToken {
         uint256 _crowdsaleEndTime
       ) {
         require(_multisig != address(0));
+        require(_bountyAddress != address(0));
+        require(_airdropAddress != address(0));
         require(_softCap < _cap);
         require(now < _preSaleStartTime);
         require(_preSaleStartTime < _preSaleEndTime);
@@ -77,23 +84,29 @@ contract BundleToken is ERC23StandardToken {
         cap = _cap;
 
         multisig = _multisig;
+        bountyAddress = _bountyAddress;
+        airdropAddress = _airdropAddress;
         preSaleStartTime = _preSaleStartTime;
         preSaleEndTime = _preSaleEndTime;
         crowdsaleStartTime = _crowdsaleStartTime;
         crowdsaleEndTime = _crowdsaleEndTime;
 
         foundation = msg.sender;
-        totalSupply = TOKEN_TEAM.add(TOKEN_OPERATIONAL_EXPENCES).add(TOKEN_MARKETING).add(TOKEN_BOUNTY);
+        totalSupply = TOKEN_TEAM.add(TOKEN_OPERATIONAL_EXPENCES).add(TOKEN_MARKETING);
         balances[foundation] = totalSupply;
+        balances[bountyAddress] = TOKEN_BOUNTY;
+        balances[airdropAddress] = TOKEN_AIRDROP;
 
-        lockups[foundation].period = 5;
+        uint256 period = 5;
+        lockups[foundation].period = period;
         lockups[foundation].totalTokenAmount = totalSupply;
         lockups[foundation].releasedTokenAmount = 0;
         lockups[foundation].isLocked = true;
 
+
         uint256 i = 0;
-        for (i = 0; i < 5; i++) {
-          lockups[foundation].releasableTokens.push(totalSupply.div(5));
+        for (i = 0; i < period; i++) {
+          lockups[foundation].releasableTokens.push(totalSupply.div(period));
         }
   	}
 
@@ -294,9 +307,7 @@ contract BundleToken is ERC23StandardToken {
             uint256 _days = now.sub(crowdsaleEndTime);
             uint256 _index = 0;
 
-            if (_days >= DURATION.mul(5)) {
-                _index = 5;
-            } else if (_days >= DURATION.mul(4)) {
+            if (_days >= DURATION.mul(4)) {
                 _index = 4;
             } else if (_days >= DURATION.mul(3)) {
                 _index = 3;

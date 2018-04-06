@@ -15,7 +15,16 @@ const should = require('chai')
 
 const Token = artifacts.require('BundleToken');
 
-contract('BundleToken', function([deployer, wallet, foundation, investor, investor2, investor3]) {
+contract('BundleToken', function([
+  deployer,
+  wallet,
+  foundation,
+  bountyAddress,
+  airdropAddress,
+  investor,
+  investor2,
+  investor3
+]) {
   const unit = new BigNumber(10 ** 18);
   const tokenRate = new BigNumber(5000);
   const cap = ether(70);
@@ -40,6 +49,8 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
     this.token = await Token.new(
       wallet,
+      bountyAddress,
+      airdropAddress,
       softCap,
       cap,
       this.preSaleStartTime,
@@ -53,6 +64,8 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
     it('should fail if cap smaller than softCap', async function() {
       await Token.new(
         wallet,
+        bountyAddress,
+        airdropAddress,
         cap,
         softCap,
         this.preSaleStartTime,
@@ -67,6 +80,8 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
       await Token.new(
         wallet,
+        bountyAddress,
+        airdropAddress,
         softCap,
         cap,
         startTime,
@@ -135,15 +150,31 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
   describe('accepting payments', function() {
     it('should reject payments before start', async function() {
-      await this.token.send(minContribution, { from: investor }).should.be.rejectedWith(EVMThrow);
-      await this.token.buyTokens(investor, { value: minContribution }).should.be.rejectedWith(EVMThrow);
+      await this.token
+        .send(minContribution, {
+          from: investor
+        })
+        .should.be.rejectedWith(EVMThrow);
+      await this.token
+        .buyTokens(investor, {
+          value: minContribution
+        })
+        .should.be.rejectedWith(EVMThrow);
     });
 
     it('should reject payments if investor not in whitelist', async function() {
       await increaseTimeTo(this.crowdsaleStartTime);
 
-      await this.token.send(minContribution, { from: investor }).should.be.rejectedWith(EVMThrow);
-      await this.token.buyTokens(investor, { value: minContribution }).should.be.rejectedWith(EVMThrow);
+      await this.token
+        .send(minContribution, {
+          from: investor
+        })
+        .should.be.rejectedWith(EVMThrow);
+      await this.token
+        .buyTokens(investor, {
+          value: minContribution
+        })
+        .should.be.rejectedWith(EVMThrow);
     });
 
     it('should reject payments smaller than min contribution', async function() {
@@ -151,8 +182,16 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
       await this.token.setWhitelist([investor], []).should.be.fulfilled;
 
-      await this.token.send(minContribution.minus(1), { from: investor }).should.be.rejectedWith(EVMThrow);
-      await this.token.buyTokens(investor, { value: minContribution.minus(1) }).should.be.rejectedWith(EVMThrow);
+      await this.token
+        .send(minContribution.minus(1), {
+          from: investor
+        })
+        .should.be.rejectedWith(EVMThrow);
+      await this.token
+        .buyTokens(investor, {
+          value: minContribution.minus(1)
+        })
+        .should.be.rejectedWith(EVMThrow);
     });
 
     it('should accept payments after start', async function() {
@@ -160,7 +199,10 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
       await this.token.setWhitelist([investor], []).should.be.fulfilled;
 
-      await this.token.buy({ from: investor, value: minContribution }).should.be.fulfilled;
+      await this.token.buy({
+        from: investor,
+        value: minContribution
+      }).should.be.fulfilled;
     });
 
     it('should be correct values after token sold', async function() {
@@ -168,7 +210,10 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
       await this.token.setWhitelist([investor], []).should.be.fulfilled;
 
-      await this.token.buy({ from: investor, value: minContribution }).should.be.fulfilled;
+      await this.token.buy({
+        from: investor,
+        value: minContribution
+      }).should.be.fulfilled;
 
       let balanceOfInvestor = await this.token.balanceOf(investor);
       let etherRaised = await this.token.getEtherRaised();
@@ -184,15 +229,31 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
     it('should reject payments when ico halted', async function() {
       this.token.halt();
 
-      await this.token.send(minContribution, { from: investor }).should.be.rejectedWith(EVMThrow);
-      await this.token.buyTokens(investor, { value: minContribution }).should.be.rejectedWith(EVMThrow);
+      await this.token
+        .send(minContribution, {
+          from: investor
+        })
+        .should.be.rejectedWith(EVMThrow);
+      await this.token
+        .buyTokens(investor, {
+          value: minContribution
+        })
+        .should.be.rejectedWith(EVMThrow);
     });
 
     it('should accept payments after ico unhalted', async function() {
       this.token.halt();
 
-      await this.token.send(minContribution, { from: investor }).should.be.rejectedWith(EVMThrow);
-      await this.token.buyTokens(investor, { value: minContribution }).should.be.rejectedWith(EVMThrow);
+      await this.token
+        .send(minContribution, {
+          from: investor
+        })
+        .should.be.rejectedWith(EVMThrow);
+      await this.token
+        .buyTokens(investor, {
+          value: minContribution
+        })
+        .should.be.rejectedWith(EVMThrow);
 
       this.token.unhalt();
 
@@ -200,7 +261,10 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
       await this.token.setWhitelist([investor], []).should.be.fulfilled;
 
-      await this.token.buy({ from: investor, value: minContribution }).should.be.fulfilled;
+      await this.token.buy({
+        from: investor,
+        value: minContribution
+      }).should.be.fulfilled;
     });
   });
 
@@ -289,11 +353,11 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
       totalTokenAmount.should.be.bignumber.equal(balance);
       isLocked.should.equal(true);
 
-      releasableTokens[0].should.be.bignumber.equal(ether(49 * 10 ** 6));
-      releasableTokens[1].should.be.bignumber.equal(ether(49 * 10 ** 6));
-      releasableTokens[2].should.be.bignumber.equal(ether(49 * 10 ** 6));
-      releasableTokens[3].should.be.bignumber.equal(ether(49 * 10 ** 6));
-      releasableTokens[4].should.be.bignumber.equal(ether(49 * 10 ** 6));
+      releasableTokens[0].should.be.bignumber.equal(ether(47 * 10 ** 6));
+      releasableTokens[1].should.be.bignumber.equal(ether(47 * 10 ** 6));
+      releasableTokens[2].should.be.bignumber.equal(ether(47 * 10 ** 6));
+      releasableTokens[3].should.be.bignumber.equal(ether(47 * 10 ** 6));
+      releasableTokens[4].should.be.bignumber.equal(ether(47 * 10 ** 6));
     });
 
     it('should be correct lockup periods when buy with fiat', async function() {
@@ -335,7 +399,9 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
       await increaseTimeTo(this.crowdsaleEndTime + duration.days(2 * 30) + duration.seconds(1));
 
       await this.token
-        .transfer(investor3, 20 * 5000 * 1.2 * unit, { from: investor2 })
+        .transfer(investor3, 20 * 5000 * 1.2 * unit, {
+          from: investor2
+        })
         .should.be.rejectedWith(EVMThrow);
 
       const isLocked = await this.token.getLockupIsLocked(investor2);
@@ -358,7 +424,9 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
 
       await increaseTimeTo(this.crowdsaleEndTime + duration.days(5 * 30) + duration.seconds(1));
 
-      await this.token.transfer(investor2, 20 * 5000 * 1.2, { from: investor }).should.be.fulfilled;
+      await this.token.transfer(investor2, 20 * 5000 * 1.2, {
+        from: investor
+      }).should.be.fulfilled;
 
       const isLocked = await this.token.getLockupIsLocked(investor);
 
@@ -373,44 +441,24 @@ contract('BundleToken', function([deployer, wallet, foundation, investor, invest
       const contribution = ether(20);
       const bonusRate = 120;
 
-      await increaseTimeTo(this.crowdsaleEndTime + duration.seconds(1));
-      await this.token.transfer(investor3, 49 * 10 ** 6 * unit, { from: deployer }).should.be.fulfilled;
-      await this.token.transfer(investor3, 1 * 10 ** 6 * unit, { from: deployer }).should.be.rejectedWith(EVMThrow);
+      for (var i = 0; i < 5; i++) {
+        await increaseTimeTo(this.crowdsaleEndTime + duration.days(5 * 30 * i) + duration.seconds(1));
+        await this.token.transfer(investor3, 47 * 10 ** 6 * unit, {
+          from: deployer
+        }).should.be.fulfilled;
+        await this.token
+          .transfer(investor3, 1 * 10 ** 6 * unit, {
+            from: deployer
+          })
+          .should.be.rejectedWith(EVMThrow);
 
-      var releasedTokenAmount = await this.token.getLockupReleasedTokenAmount(deployer);
-      releasedTokenAmount.should.be.bignumber.equal(49 * 10 ** 6 * 1 * unit);
-
-      await increaseTimeTo(this.crowdsaleEndTime + duration.days(5 * 30 * 1) + duration.seconds(1));
-      await this.token.transfer(investor3, 49 * 10 ** 6 * unit, { from: deployer }).should.be.fulfilled;
-      await this.token.transfer(investor3, 1 * 10 ** 6 * unit, { from: deployer }).should.be.rejectedWith(EVMThrow);
-
-      releasedTokenAmount = await this.token.getLockupReleasedTokenAmount(deployer);
-      releasedTokenAmount.should.be.bignumber.equal(49 * 10 ** 6 * 2 * unit);
-
-      await increaseTimeTo(this.crowdsaleEndTime + duration.days(5 * 30 * 2) + duration.seconds(1));
-      await this.token.transfer(investor3, 49 * 10 ** 6 * unit, { from: deployer }).should.be.fulfilled;
-      await this.token.transfer(investor3, 1 * 10 ** 6 * unit, { from: deployer }).should.be.rejectedWith(EVMThrow);
-
-      releasedTokenAmount = await this.token.getLockupReleasedTokenAmount(deployer);
-      releasedTokenAmount.should.be.bignumber.equal(49 * 10 ** 6 * 3 * unit);
-
-      await increaseTimeTo(this.crowdsaleEndTime + duration.days(5 * 30 * 3) + duration.seconds(1));
-      await this.token.transfer(investor3, 49 * 10 ** 6 * unit, { from: deployer }).should.be.fulfilled;
-      await this.token.transfer(investor3, 1 * 10 ** 6 * unit, { from: deployer }).should.be.rejectedWith(EVMThrow);
-
-      releasedTokenAmount = await this.token.getLockupReleasedTokenAmount(deployer);
-      releasedTokenAmount.should.be.bignumber.equal(49 * 10 ** 6 * 4 * unit);
-
-      await increaseTimeTo(this.crowdsaleEndTime + duration.days(5 * 30 * 4) + duration.seconds(1));
-      await this.token.transfer(investor3, 49 * 10 ** 6 * unit, { from: deployer }).should.be.fulfilled;
-      await this.token.transfer(investor3, 1 * 10 ** 6 * unit, { from: deployer }).should.be.rejectedWith(EVMThrow);
-
-      releasedTokenAmount = await this.token.getLockupReleasedTokenAmount(deployer);
-      releasedTokenAmount.should.be.bignumber.equal(49 * 10 ** 6 * 5 * unit);
+        var releasedTokenAmount = await this.token.getLockupReleasedTokenAmount(deployer);
+        releasedTokenAmount.should.be.bignumber.equal(47 * 10 ** 6 * (i + 1) * unit);
+      }
 
       let balance = await this.token.balanceOf(investor3);
 
-      balance.should.be.bignumber.equal(245 * 10 ** 6 * unit);
+      balance.should.be.bignumber.equal(235 * 10 ** 6 * unit);
     });
   });
 });
